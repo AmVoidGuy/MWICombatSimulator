@@ -21,9 +21,16 @@ class Equipment {
     getCombatStat(combatStat) {
         let multiplier = enhancementLevelTotalMultiplierTable[this.enhancementLevel];
 
-        let stat =
-            this.gameItem.equipmentDetail.combatStats[combatStat] +
-            multiplier * this.gameItem.equipmentDetail.combatEnhancementBonuses[combatStat];
+        let bonus = multiplier * this.gameItem.equipmentDetail.combatEnhancementBonuses[combatStat];
+
+        // From the game guide: As an exception, jewelry enhancements receives a 5x the normal bonus.
+        // For instance, a +1 enhancement on jewelry is a 10% bonus.
+        const jewelryTypes = ['/equipment_types/neck', '/equipment_types/earrings', '/equipment_types/ring'];
+        if (this.gameItem.equipmentDetail.type in jewelryTypes) {
+            bonus = bonus * 5;
+        }
+
+        let stat = this.gameItem.equipmentDetail.combatStats[combatStat] + bonus;
 
         return stat;
     }
