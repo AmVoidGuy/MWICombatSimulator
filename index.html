@@ -3,6 +3,28 @@
     <head>
         <style>
             .form-control {min-width: 3.60rem}
+            body.dark-mode {
+                background-color: #333;
+                color: #f0f0f0;
+            }
+
+            body.dark-mode header {
+                background-color: #666;
+            }
+
+            body.dark-mode input[type="number"],
+            body.dark-mode .form-select,
+            body.dark-mode .input-group-text,
+            body.dark-mode .accordion-button,
+            body.dark-mode .accordion-collapse,
+            body.dark-mode .modal-content,
+            body.dark-mode textarea {
+                background-color: #444;
+                color: #f0f0f0;
+                border: 1px solid #999;
+                /* Add other relevant styles for form controls in dark mode */
+            }
+
         </style>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -712,6 +734,13 @@
                                         Import/Export
                                     </button>
                                 </div>
+                                <div class="col align-self-center">
+                                    Dark Mode:
+                                    <label class="switch">
+                                        <input type="checkbox" id="darkModeToggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
                             <!-- #endregion -->
                         </div>
@@ -775,6 +804,10 @@
                         <div class="col-md-4" id="combatStat_rangedMaxDamage"></div>
                     </div>
                     <div class="row">
+                        <div class="col-md-8">Magic Accuracy:</div>
+                        <div class="col-md-4" id="combatStat_magicAccuracyRating"></div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-8">Magic Damage:</div>
                         <div class="col-md-4" id="combatStat_magicMaxDamage"></div>
                     </div>
@@ -815,6 +848,10 @@
                         <div class="col-md-4" id="combatStat_rangedEvasionRating"></div>
                     </div>
                     <div class="row">
+                        <div class="col-md-8">Magic Evasion:</div>
+                        <div class="col-md-4" id="combatStat_magicEvasionRating"></div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-8">Armor:</div>
                         <div class="col-md-4" id="combatStat_totalArmor"></div>
                     </div>
@@ -831,12 +868,40 @@
                         <div class="col-md-4" id="combatStat_totalFireResistance"></div>
                     </div>
                     <div class="row">
+                        <div class="col-md-8">Tenacity:</div>
+                        <div class="col-md-4" id="combatStat_tenacity"></div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-8">Life Steal:</div>
                         <div class="col-md-4" id="combatStat_lifeSteal"></div>
                     </div>
                     <div class="row">
+                        <div class="col-md-8">Mana Leech:</div>
+                        <div class="col-md-4" id="combatStat_manaLeech"></div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-8">Reflect Power:</div>
                         <div class="col-md-4" id="combatStat_physicalReflectPower"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">Armor Penetration:</div>
+                        <div class="col-md-4" id="combatStat_armorPenetration"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">Water Penetration:</div>
+                        <div class="col-md-4" id="combatStat_waterPenetration"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">Nature Penetration:</div>
+                        <div class="col-md-4" id="combatStat_naturePenetration"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">Fire Penetration:</div>
+                        <div class="col-md-4" id="combatStat_firePenetration"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">Cast Speed:</div>
+                        <div class="col-md-4" id="combatStat_castSpeed"></div>
                     </div>
                     <div class="row">
                         <div class="col-md-8">HP Regen:</div>
@@ -1066,6 +1131,37 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row d-none" id="simulationResultDamageDoneAccordionEnemy6">
+                                <div class="col">
+                                    <div class="accordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button
+                                                        id="buttonSimulationResultDamageDoneAccordionEnemy6"
+                                                        class="accordion-button collapsed"
+                                                        type="button"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#collapseDamageDone6"
+                                                        style="padding: 0.5em"
+                                                >
+                                                    <b>Damage Done (Enemy 6)</b>
+                                                </button>
+                                            </h2>
+                                            <div id="collapseDamageDone6" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <div class="row">
+                                                        <div class="col-md-5"><b>Source</b></div>
+                                                        <div class="col-md-3 text-end"><b>Hitchance</b></div>
+                                                        <div class="col-md-2 text-end"><b>DPS</b></div>
+                                                        <div class="col-md-2 text-end"><b>%</b></div>
+                                                    </div>
+                                                    <div id="simulationResultDamageDoneEnemy6"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row pt-2">
                                 <b>Damage Taken (Total)</b>
                             </div>
@@ -1225,6 +1321,37 @@
                                                         <div class="col-md-2 text-end"><b>%</b></div>
                                                     </div>
                                                     <div id="simulationResultDamageTakenEnemy5"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row d-none" id="simulationResultDamageTakenAccordionEnemy6">
+                                <div class="col">
+                                    <div class="accordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button
+                                                        id="buttonSimulationResultDamageTakenAccordionEnemy6"
+                                                        class="accordion-button collapsed"
+                                                        type="button"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#collapseDamageTaken6"
+                                                        style="padding: 0.5em"
+                                                >
+                                                    <b>Damage Taken (Enemy 6)</b>
+                                                </button>
+                                            </h2>
+                                            <div id="collapseDamageTaken6" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <div class="row">
+                                                        <div class="col-md-5"><b>Source</b></div>
+                                                        <div class="col-md-3 text-end"><b>Hitchance</b></div>
+                                                        <div class="col-md-2 text-end"><b>DPS</b></div>
+                                                        <div class="col-md-2 text-end"><b>%</b></div>
+                                                    </div>
+                                                    <div id="simulationResultDamageTakenEnemy6"></div>
                                                 </div>
                                             </div>
                                         </div>

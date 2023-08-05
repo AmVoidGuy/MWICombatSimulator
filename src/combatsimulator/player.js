@@ -69,6 +69,7 @@ class Player extends CombatUnit {
             "slashAccuracy",
             "smashAccuracy",
             "rangedAccuracy",
+            "magicAccuracy",
             "stabDamage",
             "slashDamage",
             "smashDamage",
@@ -84,6 +85,7 @@ class Player extends CombatUnit {
             "slashEvasion",
             "smashEvasion",
             "rangedEvasion",
+            "magicEvasion",
             "armor",
             "waterResistance",
             "natureResistance",
@@ -100,6 +102,14 @@ class Player extends CombatUnit {
             "combatExperience",
             "criticalRate",
             "criticalDamage",
+            "abilityHaste",
+            "tenacity",
+            "castSpeed",
+            "armorPenetration",
+            "waterPenetration",
+            "naturePenetration",
+            "firePenetration",
+            "manaLeech",
         ].forEach((stat) => {
             this.combatDetails.combatStats[stat] = Object.values(this.equipment)
                 .filter((equipment) => equipment != null)

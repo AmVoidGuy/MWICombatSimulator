@@ -14,7 +14,7 @@ class Ability {
 
         this.manaCost = gameAbility.manaCost;
         this.cooldownDuration = gameAbility.cooldownDuration;
-
+        this.castDuration = gameAbility.castDuration;
         this.abilityEffects = [];
 
         for (const effect of gameAbility.abilityEffects) {
@@ -25,10 +25,15 @@ class Ability {
                 damageType: effect.damageType,
                 damageFlat: effect.baseDamageFlat + (this.level - 1) * effect.baseDamageFlatLevelBonus,
                 damageRatio: effect.baseDamageRatio + (this.level - 1) * effect.baseDamageRatioLevelBonus,
-                bleedRatio: effect.bleedRatio,
-                bleedDuration: effect.bleedDuration,
+                accuracyRatio: effect.bonusAccuracyRatio + (this.level - 1) * effect.bonusAccuracyRatioLevelBonus,
+                damageOverTimeRatio: effect.damageOverTimeRatio,
+                damageOverTimeDuration: effect.damageOverTimeDuration,
                 stunChance: effect.stunChance,
                 stunDuration: effect.stunDuration,
+                blindChance: effect.blindChance,
+                blindDuration: effect.blindDuration,
+                silenceChance: effect.silenceChance,
+                silenceDuration: effect.silenceDuration,
                 buffs: null,
             };
             if (effect.buffs) {
@@ -70,7 +75,12 @@ class Ability {
             return false;
         }
 
-        if (this.lastUsed + this.cooldownDuration > currentTime) {
+        if (source.isSilenced) {
+            return false;
+        }
+
+        let hastedCooldownDuration = this.cooldownDuration * 100 / (100 + source.combatDetails.combatStats.abilityHaste)
+        if (this.lastUsed + hastedCooldownDuration > currentTime) {
             return false;
         }
 

@@ -55,6 +55,7 @@ class CombatUtilities {
         let sourceAccuracyRating = 1;
         let sourceAutoAttackMaxDamage = 1;
         let targetEvasionRating = 1;
+        let bonusAccuracyRatio = abilityEffect ? abilityEffect.accuracyRatio : 0;
 
         switch (combatStyle) {
             case "/combat_styles/stab":
@@ -78,7 +79,9 @@ class CombatUtilities {
                 targetEvasionRating = target.combatDetails.rangedEvasionRating;
                 break;
             case "/combat_styles/magic":
+                sourceAccuracyRating = source.combatDetails.magicAccuracyRating;
                 sourceAutoAttackMaxDamage = source.combatDetails.magicMaxDamage;
+                targetEvasionRating = target.combatDetails.magicEvasionRating;
                 break;
             default:
                 throw new Error("Unknown combat style: " + combatStyle);
@@ -93,41 +96,40 @@ class CombatUtilities {
             case "/damage_types/physical":
                 sourceDamageMultiplier = 1 + source.combatDetails.combatStats.physicalAmplify;
                 sourceResistance = source.combatDetails.totalArmor;
-                targetResistance = target.combatDetails.totalArmor;
+                targetResistance = target.combatDetails.totalArmor * (1 - source.combatDetails.combatStats.armorPenetration);
                 targetReflectPower = target.combatDetails.combatStats.physicalReflectPower;
                 break;
             case "/damage_types/water":
                 sourceDamageMultiplier = 1 + source.combatDetails.combatStats.waterAmplify;
                 sourceResistance = source.combatDetails.totalWaterResistance;
-                targetResistance = target.combatDetails.totalWaterResistance;
+                targetResistance = target.combatDetails.totalWaterResistance * (1 - source.combatDetails.combatStats.waterPenetration);
                 break;
             case "/damage_types/nature":
                 sourceDamageMultiplier = 1 + source.combatDetails.combatStats.natureAmplify;
                 sourceResistance = source.combatDetails.totalNatureResistance;
-                targetResistance = target.combatDetails.totalNatureResistance;
+                targetResistance = target.combatDetails.totalNatureResistance * (1 - source.combatDetails.combatStats.naturePenetration);
                 break;
             case "/damage_types/fire":
                 sourceDamageMultiplier = 1 + source.combatDetails.combatStats.fireAmplify;
                 sourceResistance = source.combatDetails.totalFireResistance;
-                targetResistance = target.combatDetails.totalFireResistance;
+                targetResistance = target.combatDetails.totalFireResistance * (1 - source.combatDetails.combatStats.firePenetration);
                 break;
             default:
                 throw new Error("Unknown damage type: " + damageType);
         }
 
-        let hitChance = 1;
         let critChance = 0;
         let bonusCritChance = source.combatDetails.combatStats.criticalRate;
         let bonusCritDamage = source.combatDetails.combatStats.criticalDamage;
 
-        if (combatStyle != "/combat_styles/magic") {
-            hitChance =
-                Math.pow(sourceAccuracyRating, 1.4) /
-                (Math.pow(sourceAccuracyRating, 1.4) + Math.pow(targetEvasionRating, 1.4));
-        }
+        sourceAccuracyRating += sourceAccuracyRating * bonusAccuracyRatio;
+
+        let hitChance =
+            Math.pow(sourceAccuracyRating, 1.4) /
+            (Math.pow(sourceAccuracyRating, 1.4) + Math.pow(targetEvasionRating, 1.4));
 
         if (combatStyle == "/combat_styles/ranged") {
-                critChance = 0.3 * hitChance;
+            critChance = 0.3 * hitChance;
         }
 
         critChance = critChance + bonusCritChance;
@@ -145,7 +147,7 @@ class CombatUtilities {
 
         let damageRoll = CombatUtilities.randomInt(sourceMinDamage, sourceMaxDamage);
         damageRoll = damageRoll * (1 + source.combatDetails.combatStats.taskDamage);
-        let maxPremitigatedDamage = Math.min(damageRoll, target.combatDetails.currentHitpoints);
+        var premitigatedDamage = damageRoll;
 
         let damageDone = 0;
         let mitigatedReflectDamage = 0;
@@ -183,6 +185,11 @@ class CombatUtilities {
             lifeStealHeal = source.addHitpoints(Math.floor(source.combatDetails.combatStats.lifeSteal * damageDone));
         }
 
+        let manaLeech = 0;
+        if (!abilityEffect && didHit && source.combatDetails.combatStats.manaLeech > 0) {
+            manaLeech = source.addManapoints(Math.floor(source.combatDetails.combatStats.manaLeech * damageDone));
+        }
+
         let experienceGained = {
             source: {
                 attack: 0,
@@ -196,28 +203,33 @@ class CombatUtilities {
             },
         };
 
-        switch (combatStyle) {
-            case "/combat_styles/stab":
-                experienceGained.source.attack = this.calculateAttackExperience(damageDone, combatStyle);
-                experienceGained.source.power = this.calculatePowerExperience(damageDone, combatStyle);
-                break;
-            case "/combat_styles/slash":
-                experienceGained.source.attack = this.calculateAttackExperience(damageDone, combatStyle);
-                experienceGained.source.power = this.calculatePowerExperience(damageDone, combatStyle);
-                break;
-            case "/combat_styles/smash":
-                experienceGained.source.attack = this.calculateAttackExperience(damageDone, combatStyle);
-                experienceGained.source.power = this.calculatePowerExperience(damageDone, combatStyle);
-                break;
-            case "/combat_styles/ranged":
-                experienceGained.source.ranged = this.calculateRangedExperience(damageDone);
-                break;
-            case "/combat_styles/magic":
-                experienceGained.source.magic = this.calculateMagicExperience(damageDone);
-                break;
+        var damagePrevented = premitigatedDamage - damageDone;
+        if (target.combatDetails.combatStats.currentHitpoints == 0) {
+            damagePrevented = 0;
+        } else if (damagePrevented < 0) {
+            damagePrevented = 0;
         }
 
-        let damagePrevented = maxPremitigatedDamage - damageDone;
+        switch (combatStyle) {
+            case "/combat_styles/stab":
+                experienceGained.source.attack = this.calculateAttackExperience(damageDone, damagePrevented, combatStyle);
+                experienceGained.source.power = this.calculatePowerExperience(damageDone, damagePrevented, combatStyle);
+                break;
+            case "/combat_styles/slash":
+                experienceGained.source.attack = this.calculateAttackExperience(damageDone, damagePrevented, combatStyle);
+                experienceGained.source.power = this.calculatePowerExperience(damageDone, damagePrevented, combatStyle);
+                break;
+            case "/combat_styles/smash":
+                experienceGained.source.attack = this.calculateAttackExperience(damageDone, damagePrevented, combatStyle);
+                experienceGained.source.power = this.calculatePowerExperience(damageDone, damagePrevented, combatStyle);
+                break;
+            case "/combat_styles/ranged":
+                experienceGained.source.ranged = this.calculateRangedExperience(damageDone, damagePrevented);
+                break;
+            case "/combat_styles/magic":
+                experienceGained.source.magic = this.calculateMagicExperience(damageDone, damagePrevented);
+                break;
+        }
 
         experienceGained.target.defense = this.calculateDefenseExperience(damagePrevented);
         experienceGained.target.stamina = this.calculateStaminaExperience(damagePrevented, damageDone);
@@ -226,7 +238,7 @@ class CombatUtilities {
             experienceGained.target.defense += this.calculateDefenseExperience(reflectDamageDone);
         }
 
-        return { damageDone, didHit, reflectDamageDone, lifeStealHeal, experienceGained };
+        return { damageDone, didHit, reflectDamageDone, lifeStealHeal, manaLeech, experienceGained };
     }
 
     static processHeal(source, abilityEffect) {
@@ -264,27 +276,29 @@ class CombatUtilities {
         return 0.3 * manaUsed;
     }
 
-    static calculateAttackExperience(damage, combatStyle) {
+    static calculateAttackExperience(damage, mitigated, combatStyle) {
+        let baseExpForDamage = 0.6 + 0.125 * (damage + 0.35 * mitigated);
         switch (combatStyle) {
             case "/combat_styles/stab":
-                return (0.6 + 0.15 * damage) * 0.9;
+                return baseExpForDamage * 0.9;
             case "/combat_styles/slash":
-                return 0.3 + 0.075 * damage;
+                return baseExpForDamage * 0.5;
             case "/combat_styles/smash":
-                return (0.6 + 0.15 * damage) * 0.1;
+                return baseExpForDamage * 0.1;
             default:
                 return 0;
         }
     }
 
-    static calculatePowerExperience(damage, combatStyle) {
+    static calculatePowerExperience(damage, mitigated, combatStyle) {
+        let baseExpForDamage = 0.6 + 0.125 * (damage + 0.35 * mitigated);
         switch (combatStyle) {
             case "/combat_styles/smash":
-                return (0.6 + 0.15 * damage) * 0.9;
+                return baseExpForDamage * 0.9;
             case "/combat_styles/slash":
-                return 0.3 + 0.075 * damage;
+                return baseExpForDamage * 0.5;
             case "/combat_styles/stab":
-                return (0.6 + 0.15 * damage) * 0.1;
+                return baseExpForDamage * 0.1;
             default:
                 return 0;
         }
@@ -294,12 +308,14 @@ class CombatUtilities {
         return 0.4 + 0.1 * damagePrevented;
     }
 
-    static calculateRangedExperience(damage) {
-        return 0.4 + 0.1 * damage;
+    static calculateRangedExperience(damage, mitigated) {
+        let baseExpForDamage = 0.6 + 0.125 * (damage + 0.35 * mitigated);
+        return baseExpForDamage * 0.667;
     }
 
-    static calculateMagicExperience(damage) {
-        return 0.4 + 0.1 * damage;
+    static calculateMagicExperience(damage, mitigated) {
+        let baseExpForDamage = 0.6 + 0.125 * (damage + 0.35 * mitigated);
+        return baseExpForDamage * 0.667;
     }
 }
 

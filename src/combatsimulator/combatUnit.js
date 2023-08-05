@@ -2,6 +2,10 @@ class CombatUnit {
     isPlayer;
     isStunned = false;
     stunExpireTime = null;
+    isBlind = false;
+    blindExpireTime = null;
+    isSilenced = false;
+    silenceExpireTime = null;
 
     // Base levels which don't change after initialization
     staminaLevel = 1;
@@ -36,6 +40,7 @@ class CombatUnit {
         slashAccuracyRating: 11,
         smashAccuracyRating: 11,
         rangedAccuracyRating: 11,
+        magicAccuracyRating: 11,
         stabMaxDamage: 11,
         slashMaxDamage: 11,
         smashMaxDamage: 11,
@@ -46,6 +51,7 @@ class CombatUnit {
         slashEvasionRating: 11,
         smashEvasionRating: 11,
         rangedEvasionRating: 11,
+        magicEvasionRating: 11,
         totalArmor: 0.2,
         totalWaterResistance: 0.4,
         totalNatureResistance: 0.4,
@@ -54,12 +60,14 @@ class CombatUnit {
             combatStyleHrid: "/combat_styles/smash",
             damageType: "/damage_types/physical",
             attackInterval: 3000000000,
+            abilityHaste: 0,
             criticalRate: 0,
             criticalDamage: 0,
             stabAccuracy: 0,
             slashAccuracy: 0,
             smashAccuracy: 0,
             rangedAccuracy: 0,
+            magicAccuracy: 0,
             stabDamage: 0,
             slashDamage: 0,
             smashDamage: 0,
@@ -70,6 +78,10 @@ class CombatUnit {
             natureAmplify: 0,
             fireAmplify: 0,
             healingAmplify: 0,
+            armorPenetration: 0,
+            waterPenetration: 0,
+            naturePenetration: 0,
+            firePenetration: 0,
             physicalReflectPower: 0,
             maxHitpoints: 0,
             maxManapoints: 0,
@@ -77,17 +89,21 @@ class CombatUnit {
             slashEvasion: 0,
             smashEvasion: 0,
             rangedEvasion: 0,
+            magicEvasion: 0,
             armor: 0,
             waterResistance: 0,
             natureResistance: 0,
             fireResistance: 0,
+            tenacity: 0,
             lifeSteal: 0,
+            manaLeech: 0,
             HPRegen: 0.01,
             MPRegen: 0.01,
             combatDropRate: 0,
             combatDropQuantity: 0,
             combatRareFind: 0,
             combatExperience: 0,
+            castSpeed: 0,
             foodSlots: 1,
             drinkSlots: 1
         },
@@ -134,8 +150,13 @@ class CombatUnit {
                 (10 + this.combatDetails.powerLevel) *
                 (1 + this.combatDetails.combatStats[style + "Damage"]) *
                 (1 + damageRatioBoost);
-            this.combatDetails[style + "EvasionRating"] =
-                (10 + this.combatDetails.defenseLevel) * (1 + this.combatDetails.combatStats[style + "Evasion"]);
+            let baseEvasion = (10 + this.combatDetails.defenseLevel) * (1 + this.combatDetails.combatStats[style + "Evasion"]);
+            this.combatDetails[style + "EvasionRating"] = baseEvasion;
+            let evasionBoosts = this.getBuffBoosts("/buff_types/evasion");
+            for (const boost of evasionBoosts) {
+                this.combatDetails[style + "EvasionRating"] += boost.flatBoost;
+                this.combatDetails[style + "EvasionRating"] += baseEvasion * boost.ratioBoost;
+            }
         });
 
         this.combatDetails.rangedAccuracyRating =
@@ -146,13 +167,30 @@ class CombatUnit {
             (10 + this.combatDetails.rangedLevel) *
             (1 + this.combatDetails.combatStats.rangedDamage) *
             (1 + damageRatioBoost);
-        this.combatDetails.rangedEvasionRating =
-            (10 + this.combatDetails.defenseLevel) * (1 + this.combatDetails.combatStats.rangedEvasion);
 
+        let baseRangedEvasion = (10 + this.combatDetails.defenseLevel) * (1 + this.combatDetails.combatStats.rangedEvasion);
+        this.combatDetails.rangedEvasionRating = baseRangedEvasion;
+        let evasionBoosts = this.getBuffBoosts("/buff_types/evasion");
+        for (const boost of evasionBoosts) {
+            this.combatDetails.rangedEvasionRating += boost.flatBoost;
+            this.combatDetails.rangedEvasionRating += baseRangedEvasion * boost.ratioBoost;
+        }
+
+        this.combatDetails.magicAccuracyRating =
+            (10 + this.combatDetails.magicLevel) *
+            (1 + this.combatDetails.combatStats.magicAccuracy) *
+            (1 + accuracyRatioBoost);
         this.combatDetails.magicMaxDamage =
             (10 + this.combatDetails.magicLevel) *
             (1 + this.combatDetails.combatStats.magicDamage) *
             (1 + damageRatioBoost);
+
+        let baseMagicEvasion = (10 + ((this.combatDetails.defenseLevel + this.combatDetails.rangedLevel) / 2)) * (1 + this.combatDetails.combatStats.magicEvasion);
+        this.combatDetails.magicEvasionRating = baseMagicEvasion;
+        for (const boost of evasionBoosts) {
+            this.combatDetails.magicEvasionRating += boost.flatBoost;
+            this.combatDetails.magicEvasionRating += baseMagicEvasion * boost.ratioBoost;
+        }
 
         this.combatDetails.combatStats.physicalAmplify += this.getBuffBoost("/buff_types/physical_amplify").flatBoost;
         this.combatDetails.combatStats.waterAmplify += this.getBuffBoost("/buff_types/water_amplify").flatBoost;
@@ -175,8 +213,7 @@ class CombatUnit {
         }
 
         let baseWaterResistance =
-            0.1 * this.combatDetails.defenseLevel +
-            0.3 * this.combatDetails.magicLevel +
+            0.1 * (this.combatDetails.defenseLevel + this.combatDetails.magicLevel) +
             this.combatDetails.combatStats.waterResistance;
         this.combatDetails.totalWaterResistance = baseWaterResistance;
         let waterResistanceBoosts = this.getBuffBoosts("/buff_types/water_resistance");
@@ -186,8 +223,7 @@ class CombatUnit {
         }
 
         let baseNatureResistance =
-            0.1 * this.combatDetails.defenseLevel +
-            0.3 * this.combatDetails.magicLevel +
+            0.1 * (this.combatDetails.defenseLevel + this.combatDetails.magicLevel) +
             this.combatDetails.combatStats.natureResistance;
         this.combatDetails.totalNatureResistance = baseNatureResistance;
         let natureResistanceBoosts = this.getBuffBoosts("/buff_types/nature_resistance");
@@ -197,8 +233,7 @@ class CombatUnit {
         }
 
         let baseFireResistance =
-            0.1 * this.combatDetails.defenseLevel +
-            0.3 * this.combatDetails.magicLevel +
+            0.1 * (this.combatDetails.defenseLevel + this.combatDetails.magicLevel) +
             this.combatDetails.combatStats.fireResistance;
         this.combatDetails.totalFireResistance = baseFireResistance;
         let fireResistanceBoosts = this.getBuffBoosts("/buff_types/fire_resistance");
@@ -206,8 +241,10 @@ class CombatUnit {
             this.combatDetails.totalFireResistance += boost.flatBoost;
             this.combatDetails.totalFireResistance += baseFireResistance * boost.ratioBoost;
         }
-
+        this.combatDetails.combatStats.tenacity += this.getBuffBoost("/buff_types/tenacity").flatBoost;
+        this.combatDetails.combatStats.castSpeed += this.getBuffBoost("/buff_types/cast_speed").flatBoost;
         this.combatDetails.combatStats.lifeSteal += this.getBuffBoost("/buff_types/life_steal").flatBoost;
+        this.combatDetails.combatStats.manaLeech += this.getBuffBoost("/buff_types/mana_leech").flatBoost;
         this.combatDetails.combatStats.HPRegen += this.getBuffBoost("/buff_types/hp_regen").flatBoost;
         this.combatDetails.combatStats.MPRegen += this.getBuffBoost("/buff_types/mp_regen").flatBoost;
         this.combatDetails.combatStats.physicalReflectPower += this.getBuffBoost(
@@ -217,6 +254,11 @@ class CombatUnit {
         this.combatDetails.combatStats.criticalRate += this.getBuffBoost("/buff_types/critical_rate").flatBoost;
         this.combatDetails.combatStats.criticalDamage += this.getBuffBoost("/buff_types/critical_damage").flatBoost;
         this.combatDetails.combatStats.combatDropRate += this.getBuffBoost("/buff_types/combat_drop_rate").flatBoost;
+        this.combatDetails.combatStats.armorPenetration += this.getBuffBoost("/buff_types/armor_penetration").flatBoost;
+        this.combatDetails.combatStats.waterPenetration += this.getBuffBoost("/buff_types/water_penetration").flatBoost;
+        this.combatDetails.combatStats.naturePenetration += this.getBuffBoost("/buff_types/nature_penetration").flatBoost;
+        this.combatDetails.combatStats.firePenetration += this.getBuffBoost("/buff_types/fire_penetration").flatBoost;
+        this.combatDetails.combatStats.abilityHaste += this.getBuffBoost("/buff_types/ability_haste").flatBoost;
         this.combatDetails.combatStats.combatRareFind += (1 + this.combatDetails.combatStats.combatRareFind) * this.getBuffBoost("/buff_types/combat_rare_find").ratioBoost;
     }
 
@@ -257,14 +299,11 @@ class CombatUnit {
     getBuffBoost(type) {
         let boosts = this.getBuffBoosts(type);
 
-        if (boosts.length > 1) {
-            throw new Error("Using getBuffBoost with multiple buffs active: " + type);
+        let boost = {ratioBoost: 0, flatBoost: 0};
+        for(let i = 0; i < boosts.length; i++) {
+            boost.ratioBoost += boosts[i]?.ratioBoost ?? 0;
+            boost.flatBoost += boosts[i]?.flatBoost ?? 0;
         }
-
-        let boost = {
-            ratioBoost: boosts[0]?.ratioBoost ?? 0,
-            flatBoost: boosts[0]?.flatBoost ?? 0,
-        };
 
         return boost;
     }
@@ -272,6 +311,10 @@ class CombatUnit {
     reset(currentTime = 0) {
         this.isStunned = false;
         this.stunExpireTime = null;
+        this.isBlind = false;
+        this.blindExpireTime = null;
+        this.isSilenced = false;
+        this.silenceExpireTime = null;
 
         this.clearBuffs();
         this.updateCombatDetails();

@@ -243,11 +243,13 @@ function updateCombatStatsUI() {
         "smashMaxDamage",
         "rangedAccuracyRating",
         "rangedMaxDamage",
+        "magicAccuracyRating",
         "magicMaxDamage",
         "stabEvasionRating",
         "slashEvasionRating",
         "smashEvasionRating",
         "rangedEvasionRating",
+        "magicEvasionRating",
         "totalArmor",
         "totalWaterResistance",
         "totalNatureResistance",
@@ -255,6 +257,13 @@ function updateCombatStatsUI() {
     ].forEach((stat) => {
         let element = document.getElementById("combatStat_" + stat);
         element.innerHTML = Math.floor(player.combatDetails[stat]);
+    });
+
+    [
+        "tenacity",
+    ].forEach((stat) => {
+        let element = document.getElementById("combatStat_" + stat);
+        element.innerHTML = Math.floor(player.combatDetails.combatStats[stat]);
     });
 
     [
@@ -271,6 +280,12 @@ function updateCombatStatsUI() {
         "criticalDamage",
         "combatExperience",
         "taskDamage",
+        "manaLeech",
+        "armorPenetration",
+        "waterPenetration",
+        "naturePenetration",
+        "firePenetration",
+        "castSpeed",
     ].forEach((stat) => {
         let element = document.getElementById("combatStat_" + stat);
         let value = (100 * player.combatDetails.combatStats[stat]).toLocaleString([], {
@@ -978,6 +993,9 @@ function showManapointsGained(simResult) {
             case "regen":
                 sourceText = "Regen";
                 break;
+            case "manaleech":
+                sourceText = "Mana Leech";
+                break;
             default:
                 sourceText = itemDetailMap[source].name;
                 break;
@@ -1005,13 +1023,16 @@ function showDamageDone(simResult) {
 
     let secondsSimulated = simResult.simulatedTime / ONE_SECOND;
 
-    for (let i = 1; i < 6; i++) {
+    for (let i = 1; i < 7; i++) {
         let accordion = document.getElementById("simulationResultDamageDoneAccordionEnemy" + i);
         hideElement(accordion);
     }
 
     for (const [target, abilities] of Object.entries(simResult.attacks["player"])) {
         let targetDamageDone = {};
+
+        const i = simResult.timeSpentAlive.findIndex(e => e.name === target);
+        secondsSimulated = simResult.timeSpentAlive[i].timeSpentAlive / ONE_SECOND;
 
         for (const [ability, abilityCasts] of Object.entries(abilities)) {
             let casts = Object.values(abilityCasts).reduce((prev, cur) => prev + cur, 0);
@@ -1052,7 +1073,7 @@ function showDamageDone(simResult) {
 
         enemyIndex++;
     }
-
+    secondsSimulated = simResult.simulatedTime / ONE_SECOND;
     let totalResultDiv = document.getElementById("simulationResultTotalDamageDone");
     createDamageTable(totalResultDiv, totalDamageDone, secondsSimulated);
 }
@@ -1063,7 +1084,7 @@ function showDamageTaken(simResult) {
 
     let secondsSimulated = simResult.simulatedTime / ONE_SECOND;
 
-    for (let i = 1; i < 6; i++) {
+    for (let i = 1; i < 7; i++) {
         let accordion = document.getElementById("simulationResultDamageTakenAccordionEnemy" + i);
         hideElement(accordion);
     }
@@ -1072,7 +1093,8 @@ function showDamageTaken(simResult) {
         if (source == "player") {
             continue;
         }
-
+        const i = simResult.timeSpentAlive.findIndex(e => e.name === source);
+        secondsSimulated = simResult.timeSpentAlive[i].timeSpentAlive / ONE_SECOND;
         let sourceDamageTaken = {};
 
         for (const [ability, abilityCasts] of Object.entries(targets["player"])) {
@@ -1114,7 +1136,7 @@ function showDamageTaken(simResult) {
 
         enemyIndex++;
     }
-
+    secondsSimulated = simResult.simulatedTime / ONE_SECOND;
     let totalResultDiv = document.getElementById("simulationResultTotalDamageTaken");
     createDamageTable(totalResultDiv, totalDamageTaken, secondsSimulated);
 }
@@ -1142,8 +1164,8 @@ function createDamageTable(resultDiv, damageDone, secondsSimulated) {
             case "autoAttack":
                 abilityText = "Auto Attack";
                 break;
-            case "bleed":
-                abilityText = "Bleed";
+            case "damageOverTime":
+                abilityText = "Damage Over Time";
                 break;
             case "physicalReflect":
                 abilityText = "Physical Reflect";
@@ -1644,6 +1666,20 @@ function updateUI() {
     updateDrinksUI();
     updateAbilityUI();
 }
+
+const darkModeToggle = document.getElementById('darkModeToggle');
+const body = document.body;
+
+if (localStorage.getItem('darkModeEnabled') === 'true') {
+    body.classList.add('dark-mode');
+    darkModeToggle.checked = true;
+}
+
+darkModeToggle.addEventListener('change', () => {
+    body.classList.toggle('dark-mode');
+    localStorage.setItem('darkModeEnabled', darkModeToggle.checked);
+});
+
 
 initEquipmentSection();
 initLevelSection();
