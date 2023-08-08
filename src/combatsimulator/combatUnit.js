@@ -285,6 +285,12 @@ class CombatUnit {
         this.updateCombatDetails();
     }
 
+    clearCCs() {
+        this.isStunned = false;
+        this.isSilenced = false;
+        this.isBlind = false;
+    }
+
     getBuffBoosts(type) {
         let boosts = [];
         Object.values(this.combatBuffs)
