@@ -7150,10 +7150,10 @@
                 "maxCount": 3000
             },
             {
-                "itemHrid": "/items/beast_hide",
-                "dropRate": 1,
+                "itemHrid": "/items/umbral_leather",
+                "dropRate": 0.1,
                 "minCount": 1,
-                "maxCount": 1
+                "maxCount": 2
             },
             {
                 "itemHrid": "/items/red_tea_leaf",

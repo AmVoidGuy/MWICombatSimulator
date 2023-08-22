@@ -2,7 +2,7 @@
     "/items/abyssal_essence": {
         "hrid": "/items/abyssal_essence",
         "name": "Abyssal Essence",
-        "description": "Used for enhancing special equipment from Inferno Abyss",
+        "description": "Used for enhancing special equipment from Infernal Abyss",
         "categoryHrid": "/item_categories/resource",
         "sellPrice": 108,
         "isTradable": true,
