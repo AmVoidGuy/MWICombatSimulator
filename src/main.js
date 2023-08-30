@@ -1544,8 +1544,11 @@ function initImportExportModal() {
             zone: zoneSelect.value,
             simulationTime: simulationTimeInput.value,
         };
-        navigator.clipboard.writeText(JSON.stringify(state));
-        alert("Current set has been copied to clipboard.")
+            try {
+                navigator.clipboard.writeText(JSON.stringify(state)).then(() => alert("Current set has been copied to clipboard."));
+            } catch (err) {
+                alert('Error copying to clipboard: ' + err);
+            }
     });
 
     let importSetButton = document.getElementById("buttonImportSet");
