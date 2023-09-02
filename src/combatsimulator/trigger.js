@@ -108,6 +108,7 @@ class Trigger {
             case "/combat_trigger_conditions/elusiveness":
             case "/combat_trigger_conditions/frost_surge":
             case "/combat_trigger_conditions/channeling_coffee":
+            case "/combat_trigger_conditions/puncture":
                 let buffHrid = "/buff_uniques";
                 buffHrid += this.conditionHrid.slice(this.conditionHrid.lastIndexOf("/"));
                 return source.combatBuffs[buffHrid];
