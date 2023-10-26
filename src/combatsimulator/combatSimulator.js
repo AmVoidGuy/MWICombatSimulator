@@ -122,6 +122,7 @@ class CombatSimulator extends EventTarget {
     }
 
     processCombatStartEvent(event) {
+        this.players[0].generateHouseBuffs();
         this.players[0].reset(this.simulationTime);
 
         let regenTickEvent = new RegenTickEvent(this.simulationTime + REGEN_TICK_INTERVAL);
@@ -135,7 +136,6 @@ class CombatSimulator extends EventTarget {
         this.players[0].combatDetails.currentManapoints = this.players[0].combatDetails.maxManapoints;
         this.players[0].clearBuffs();
         this.players[0].clearCCs();
-
         this.startAttacks();
     }
 
@@ -442,7 +442,7 @@ class CombatSimulator extends EventTarget {
         if (this.enemies) {
             units.push(...this.enemies);
         }
-
+        this.checkEncounterEnd();
         for (const unit of units) {
             if (unit.combatDetails.currentHitpoints <= 0) {
                 continue;
@@ -764,6 +764,7 @@ class CombatSimulator extends EventTarget {
                 }
                 // console.log(target.hrid, "died");
             }
+            this.checkEncounterEnd();
         }
     }
 
